@@ -5,24 +5,22 @@ import (
 	"strings"
 	"time"
 	"yuntech-worklog-bot/crawler"
-	// "log"
-	// "os"
+	"log"
+	"os"
 	"net/http"
 	"net/http/cookiejar"
-	// "github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 	"gopkg.in/ini.v1"
 	"yuntech-worklog-bot/util"
 )
 
 func main() {
-	// logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
+	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
 	jar, _ := cookiejar.New(nil)
-	// job := cron.New(cron.WithChain(cron.Recover(logger)))
-	task(jar)
-	// job.AddFunc("", func() {
-
-	// })
-	// 20 12 * * */1
+	job := cron.New(cron.WithChain(cron.Recover(logger)))
+	job.AddFunc("20 12 * * */1", func() {
+		task(jar)
+	})
 }
 
 func task(jar *cookiejar.Jar) {
