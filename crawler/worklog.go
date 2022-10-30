@@ -3,9 +3,13 @@ package crawler
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
+	"yuntech-worklog-bot/util"
 
 	"github.com/anaskhan96/soup"
 )
@@ -48,4 +52,28 @@ func (crawler *WorkLogCrawler) getWorkId() (workId string) {
 		}
 	}
 	return
+}
+
+func (crawler *WorkLogCrawler) getFormPayload(workId string) url.Values {
+	workHours := fmt.Sprintf("%.1f", util.GetHourDiffer(crawler.StartTime, crawler.EndTime))
+	dateContract := fmt.Sprintf("%d/%d/%d,%s", crawler.StartTime.Year(), int(crawler.StartTime.Month()), crawler.StartTime.Day(), workId)
+	startTime := crawler.StartTime.Add(-time.Minute * getRandomTimeDuration(5))
+	endTime := crawler.EndTime.Add(time.Minute * getRandomTimeDuration(5))
+
+	payload := url.Values{}
+	payload.Add("DateContract", dateContract)
+	payload.Add("StartHour", strconv.Itoa(startTime.Hour()))
+	payload.Add("StartMin", strconv.Itoa(startTime.Minute()))
+	payload.Add("EndHour", strconv.Itoa(endTime.Hour()))
+	payload.Add("EndMin", strconv.Itoa(endTime.Minute()))
+	payload.Add("IsAnnualLeave", "false")
+	payload.Add("WorkContent", crawler.WorkContent)
+	payload.Add("Hours", workHours)
+	return payload
+}
+
+func getRandomTimeDuration(n int) time.Duration {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	return time.Duration(r1.Intn(n) + 1)
 }
