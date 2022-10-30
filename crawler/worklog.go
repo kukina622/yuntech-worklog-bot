@@ -28,6 +28,14 @@ type WorkLogCrawler struct {
 	WorkContent string
 }
 
+func (crawler *WorkLogCrawler) FillOutWorkLog() bool {
+	crawler.loginWorkStudy()
+	workId := crawler.getWorkId()
+	payload := crawler.getFormPayload(workId)
+	_, err := crawler.Client.PostForm(WORKLOG_CREATE_URL, payload)
+	return err == nil
+}
+
 func (crawler *WorkLogCrawler) loginWorkStudy() {
 	crawler.Client.Get(WORKLOG_LOGIN)
 }

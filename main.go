@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -56,7 +55,7 @@ func task(jar *cookiejar.Jar) {
 				StartTime:         util.ApplyTimeByTimeText(workDay, startTimeText),
 				EndTime:           util.ApplyTimeByTimeText(workDay, endTimeText),
 			}
-			fmt.Printf("%v", workLogCrawler)
+			workLogCrawler.FillOutWorkLog()
 		}
 
 	}
