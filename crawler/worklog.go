@@ -85,3 +85,9 @@ func getRandomTimeDuration(n int) time.Duration {
 	r1 := rand.New(s1)
 	return time.Duration(r1.Intn(n) + 1)
 }
+
+func (crawler *WorkLogCrawler) GetFillSuccessMessage() string {
+	const layout string = "2022-10-31"
+	workHours := fmt.Sprintf("%.1f", util.GetHourDiffer(crawler.StartTime, crawler.EndTime))
+	return fmt.Sprintf("[%s]%s~%s 共%s小時 填寫完成", crawler.WorkContent, crawler.StartTime.Format(layout), crawler.EndTime.Format(layout), workHours)
+}
