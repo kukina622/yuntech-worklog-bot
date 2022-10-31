@@ -1,8 +1,6 @@
 package main
 
 import (
-	"github.com/robfig/cron/v3"
-	"gopkg.in/ini.v1"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -13,6 +11,8 @@ import (
 	"yuntech-worklog-bot/bot"
 	"yuntech-worklog-bot/crawler"
 	"yuntech-worklog-bot/util"
+	"github.com/robfig/cron/v3"
+	"gopkg.in/ini.v1"
 )
 
 func main() {
@@ -62,7 +62,12 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				StartTime:         util.ApplyTimeByTimeText(workDay, startTimeText),
 				EndTime:           util.ApplyTimeByTimeText(workDay, endTimeText),
 			}
-			workLogCrawler.FillOutWorkLog()
+			result := workLogCrawler.FillOutWorkLog()
+			if result {
+				channelId := config.Section("discord").Key("channelID").String()
+				message := workLogCrawler.GetFillSuccessMessage()
+				bot.GetDiscordBotInstance().SendMessage(message, channelId)
+			}
 		}
 
 	}
