@@ -63,7 +63,9 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				EndTime:           util.ApplyTimeByTimeText(workDay, endTimeText),
 			}
 			result := workLogCrawler.FillOutWorkLog()
-			if result {
+
+			enableBot, _ := config.Section("discord").Key("enableBot").Bool()
+			if result && enableBot {
 				channelId := config.Section("discord").Key("channelID").String()
 				message := workLogCrawler.GetFillSuccessMessage()
 				bot.GetDiscordBotInstance().SendMessage(message, channelId)
