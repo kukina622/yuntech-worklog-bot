@@ -15,18 +15,18 @@ import (
 )
 
 func main() {
+	config, _ := ini.ShadowLoad("config.ini")
 	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
 	jar, _ := cookiejar.New(nil)
 	job := cron.New(cron.WithChain(cron.Recover(logger)))
 	job.AddFunc("20 12 * * */1", func() {
-		task(jar)
+		task(jar, config)
 	})
 }
 
-func task(jar *cookiejar.Jar) {
-	cfg, _ := ini.ShadowLoad("config.ini")
-	var workList []string = cfg.Section("work").Key("work").ValueWithShadows()
-	userConfig := cfg.Section("user")
+func task(jar *cookiejar.Jar, config *ini.File) {
+	var workList []string = config.Section("work").Key("work").ValueWithShadows()
+	userConfig := config.Section("user")
 
 	yunTechSSOCrawler := crawler.YunTechSSOCrawler{
 		Username: userConfig.Key("username").String(),
