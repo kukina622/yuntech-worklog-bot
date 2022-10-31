@@ -1,21 +1,30 @@
 package main
 
 import (
+	"github.com/robfig/cron/v3"
+	"gopkg.in/ini.v1"
+	"log"
+	"net/http"
+	"net/http/cookiejar"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+	"yuntech-worklog-bot/bot"
 	"yuntech-worklog-bot/crawler"
-	"log"
-	"os"
-	"net/http"
-	"net/http/cookiejar"
-	"github.com/robfig/cron/v3"
-	"gopkg.in/ini.v1"
 	"yuntech-worklog-bot/util"
 )
 
 func main() {
 	config, _ := ini.ShadowLoad("config.ini")
+	// discord
+	discordConfig := config.Section("discord")
+	enableBot, _ := discordConfig.Key("enableBot").Bool()
+	if enableBot {
+		botToken := discordConfig.Key("botToken").String()
+		bot.GetDiscordBotInstance().InitSession(botToken)
+	}
+	// crontab
 	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
 	jar, _ := cookiejar.New(nil)
 	job := cron.New(cron.WithChain(cron.Recover(logger)))
