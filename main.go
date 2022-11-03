@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/robfig/cron/v3"
-	"gopkg.in/ini.v1"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -13,6 +12,9 @@ import (
 	"yuntech-worklog-bot/bot"
 	"yuntech-worklog-bot/crawler"
 	"yuntech-worklog-bot/util"
+
+	"github.com/robfig/cron/v3"
+	"gopkg.in/ini.v1"
 )
 
 func main() {
@@ -29,8 +31,10 @@ func main() {
 	jar, _ := cookiejar.New(nil)
 	job := cron.New(cron.WithChain(cron.Recover(logger)))
 	job.AddFunc("20 12 * * */1", func() {
+		fmt.Println("[crontab] Task starting!!!")
 		task(jar, config)
 	})
+	fmt.Println("[crontab] Crontab running!!!")
 	job.Start()
 	select {}
 }
@@ -50,7 +54,12 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 		workWeekday, _ := strconv.Atoi(workItem[1])
 
 		if int(time.Now().Weekday())-1 == workWeekday {
-			yunTechSSOCrawler.Login()
+			fmt.Println("[crontab] Work detected")
+			fmt.Println("[yunTechSSOCrawler] Try to login yuntech SSO...")
+			if loginResult := yunTechSSOCrawler.Login(); !loginResult {
+				return
+			}
+			fmt.Println("[yunTechSSOCrawler] Login successfully")
 
 			startTimeText := workItem[2]
 			endTimeText := workItem[3]
@@ -64,10 +73,15 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				StartTime:         util.ApplyTimeByTimeText(workDay, startTimeText),
 				EndTime:           util.ApplyTimeByTimeText(workDay, endTimeText),
 			}
+			fmt.Println("[workLogCrawler] Fill out workLog...")
 			result := workLogCrawler.FillOutWorkLog()
+			if !result {
+				return
+			}
+			fmt.Println("[workLogCrawler] Fill out successfully")
 
 			enableBot, _ := config.Section("discord").Key("enableBot").Bool()
-			if result && enableBot {
+			if enableBot {
 				channelId := config.Section("discord").Key("channelID").String()
 				message := workLogCrawler.GetFillSuccessMessage()
 				bot.GetDiscordBotInstance().SendMessage(message, channelId)
