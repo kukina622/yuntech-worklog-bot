@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/robfig/cron/v3"
+	"gopkg.in/ini.v1"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -11,8 +13,6 @@ import (
 	"yuntech-worklog-bot/bot"
 	"yuntech-worklog-bot/crawler"
 	"yuntech-worklog-bot/util"
-	"github.com/robfig/cron/v3"
-	"gopkg.in/ini.v1"
 )
 
 func main() {
@@ -31,6 +31,8 @@ func main() {
 	job.AddFunc("20 12 * * */1", func() {
 		task(jar, config)
 	})
+	job.Start()
+	select {}
 }
 
 func task(jar *cookiejar.Jar, config *ini.File) {
