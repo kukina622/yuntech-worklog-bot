@@ -64,7 +64,17 @@ func (crawler *WorkLogCrawler) getWorkId() (workId string) {
 
 func (crawler *WorkLogCrawler) getFormPayload(workId string) url.Values {
 	workHours := fmt.Sprintf("%.1f", util.GetHourDiffer(crawler.StartTime, crawler.EndTime))
-	dateContract := fmt.Sprintf("%d/%d/%d,%s", crawler.StartTime.Year(), int(crawler.StartTime.Month()), crawler.StartTime.Day(), workId)
+	day := strconv.Itoa(crawler.StartTime.Day())
+	if crawler.StartTime.Day() < 10 {
+		day = "0" + day
+	}
+	dateContract := fmt.Sprintf(
+		"%d/%d/%s,%s",
+		crawler.StartTime.Year(),
+		int(crawler.StartTime.Month()),
+		day,
+		workId,
+	)
 	startTime := crawler.StartTime.Add(-time.Minute * getRandomTimeDuration(5))
 	endTime := crawler.EndTime.Add(time.Minute * getRandomTimeDuration(5))
 
