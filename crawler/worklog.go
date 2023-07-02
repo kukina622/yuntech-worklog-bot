@@ -37,7 +37,15 @@ func (crawler *WorkLogCrawler) FillOutWorkLog() bool {
 }
 
 func (crawler *WorkLogCrawler) loginWorkStudy() {
-	crawler.Client.Get(WORKLOG_LOGIN)
+	resp, err := crawler.Client.Get(WORKLOG_LOGIN)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	doc := soup.HTMLParse(string(body))
+	loginEndPointUrl := doc.Find("a").Attrs()["href"]
+	crawler.Client.Get(loginEndPointUrl)
 }
 
 func (crawler *WorkLogCrawler) getWorkId() (workId string) {
