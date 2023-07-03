@@ -72,14 +72,18 @@ func (crawler *WorkLogCrawler) getWorkId() (workId string) {
 
 func (crawler *WorkLogCrawler) getFormPayload(workId string) url.Values {
 	workHours := fmt.Sprintf("%.1f", util.GetHourDiffer(crawler.StartTime, crawler.EndTime))
+	month := strconv.Itoa(int(crawler.StartTime.Month()))
 	day := strconv.Itoa(crawler.StartTime.Day())
 	if crawler.StartTime.Day() < 10 {
 		day = "0" + day
 	}
+	if len(month) < 2 {
+		month = "0" + month
+	}
 	dateContract := fmt.Sprintf(
-		"%d/%d/%s,%s",
+		"%d/%s/%s,%s",
 		crawler.StartTime.Year(),
-		int(crawler.StartTime.Month()),
+		month,
 		day,
 		workId,
 	)
@@ -95,6 +99,7 @@ func (crawler *WorkLogCrawler) getFormPayload(workId string) url.Values {
 	payload.Add("IsAnnualLeave", "false")
 	payload.Add("WorkContent", crawler.WorkContent)
 	payload.Add("Hours", workHours)
+	fmt.Printf("%v",payload)
 	return payload
 }
 
