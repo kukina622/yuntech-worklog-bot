@@ -20,7 +20,7 @@ import (
 func main() {
 	config, _ := ini.ShadowLoad("config.ini")
 	// discord
-	discordConfig := config.Section("discord")
+	discordConfig := config.Section("discordBot")
 	enableBot, _ := discordConfig.Key("enableBot").Bool()
 	if enableBot {
 		botToken := discordConfig.Key("botToken").String()
@@ -80,11 +80,17 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 			}
 			fmt.Println("[workLogCrawler] Fill out successfully")
 
-			enableBot, _ := config.Section("discord").Key("enableBot").Bool()
+			enableBot, _ := config.Section("discordBot").Key("enableBot").Bool()
 			if enableBot {
-				channelId := config.Section("discord").Key("channelID").String()
+				channelId := config.Section("discordBot").Key("channelID").String()
 				message := workLogCrawler.GetFillSuccessMessage()
 				bot.GetDiscordBotInstance().SendMessage(message, channelId)
+			}
+			enableWebhook, _ := config.Section("discordWebhook").Key("enableWebhook").Bool()
+			if enableWebhook {
+				webhookURL := config.Section("discordWebhook").Key("webhookURL").String()
+				message := workLogCrawler.GetFillSuccessMessage()
+				bot.SendWebhookMessage(webhookURL, message)
 			}
 		}
 
