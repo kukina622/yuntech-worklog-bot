@@ -33,6 +33,7 @@ func (crawler *WorkLogCrawler) FillOutWorkLog() bool {
 	workId := crawler.getWorkId()
 	payload := crawler.getFormPayload(workId)
 	_, err := crawler.Client.PostForm(WORKLOG_CREATE_URL, payload)
+	fmt.Println()
 	return err == nil
 }
 
