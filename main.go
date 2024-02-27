@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net/http"
@@ -30,11 +31,12 @@ func main() {
 	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
 	jar, _ := cookiejar.New(nil)
 	job := cron.New(cron.WithChain(cron.Recover(logger)))
-	job.AddFunc("20 12 * * */1", func() {
-		fmt.Println("[crontab] Task starting!!!")
+	job.AddFunc(config.Section("program").Key("execFreq").String(), func() {
+		config, _ = ini.ShadowLoad("config.ini")
+		fmt.Println("\n[crontab] Task starting!!!")
 		task(jar, config)
 	})
-	fmt.Println("[crontab] Crontab running!!!")
+	fmt.Println("[crontab] Crontab running with", config.Section("program").Key("execFreq").String())
 	job.Start()
 	select {}
 }
@@ -51,10 +53,23 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 
 	for i := 0; i < len(workList); i++ {
 		workItem := strings.Split(workList[i], ",")
-		workWeekday, _ := strconv.Atoi(workItem[1])
 
-		if int(time.Now().Weekday())-1 == workWeekday {
-			fmt.Println("[crontab] Work detected")
+		var workDay time.Time
+		var workType string
+
+		if strings.Contains(workItem[1], "/") {
+			workDay, _ = time.Parse("2006/01/02 -0700", workItem[1]+" +0800")
+			workType = "(Once)"
+		} else {
+			now := time.Now()
+			zeroTime := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+			targetWeek, _ := strconv.Atoi(workItem[1])
+			workDay = zeroTime.AddDate(0, 0, targetWeek-int(time.Now().Weekday()))
+			workType = "(Weekly)"
+		}
+
+		if time.Now().After(workDay) {
+			fmt.Println("\n[crontab] Work detected at", workDay.Format("2006/01/02"), "with", workList[i], workType)
 			fmt.Println("[yunTechSSOCrawler] Try to login yuntech SSO...")
 			if loginResult := yunTechSSOCrawler.Login(); !loginResult {
 				return
@@ -63,8 +78,6 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 
 			startTimeText := workItem[2]
 			endTimeText := workItem[3]
-
-			workDay := time.Now().AddDate(0, 0, -1)
 
 			workLogCrawler := crawler.WorkLogCrawler{
 				YunTechSSOCrawler: yunTechSSOCrawler,
@@ -79,6 +92,24 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				return
 			}
 			fmt.Println("[workLogCrawler] Fill out successfully")
+			if strings.Contains(workItem[1], "/") {
+				file, _ := os.Open("config.ini")
+				var lines []string
+				scanner := bufio.NewScanner(file)
+				for scanner.Scan() {
+					line := scanner.Text()
+					if strings.Contains(line, workList[i]) && strings.HasPrefix(line, "work =") {
+						line = "# " + line
+					}
+					lines = append(lines, line)
+				}
+				file.Close()
+				outputFile, _ := os.Create("config.ini")
+				defer outputFile.Close()
+				for _, line := range lines {
+					outputFile.WriteString(line + "\n")
+				}
+			}
 
 			enableBot, _ := config.Section("discordBot").Key("enableBot").Bool()
 			if enableBot {
