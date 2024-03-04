@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"regexp"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -68,7 +69,7 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 			workType = "(Weekly)"
 		}
 
-		if time.Now().After(workDay) {
+		if time.Now().After(workDay) && workItem[len(workItem)-1]!=workDay.Format("2006/01/02") {
 			fmt.Println("\n[crontab] Work detected at", workDay.Format("2006/01/02"), "with", workList[i], workType)
 			fmt.Println("[yunTechSSOCrawler] Try to login yuntech SSO...")
 			if loginResult := yunTechSSOCrawler.Login(); !loginResult {
@@ -92,10 +93,10 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				return
 			}
 			fmt.Println("[workLogCrawler] Fill out successfully")
+			file, _ := os.Open("config.ini")
+			var lines []string
+			scanner := bufio.NewScanner(file)
 			if strings.Contains(workItem[1], "/") {
-				file, _ := os.Open("config.ini")
-				var lines []string
-				scanner := bufio.NewScanner(file)
 				for scanner.Scan() {
 					line := scanner.Text()
 					if strings.Contains(line, workList[i]) && strings.HasPrefix(line, "work =") {
@@ -103,12 +104,21 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 					}
 					lines = append(lines, line)
 				}
-				file.Close()
-				outputFile, _ := os.Create("config.ini")
-				defer outputFile.Close()
-				for _, line := range lines {
-					outputFile.WriteString(line + "\n")
+			} else {
+				for scanner.Scan() {
+					line := scanner.Text()
+					if strings.Contains(line, workList[i]) && strings.HasPrefix(line, "work =") {
+						re := regexp.MustCompile(`(.),?(\d{4}/\d{2}/\d{2})?$`)
+						line = re.ReplaceAllString(line, "$1,"+workDay.Format("2006/01/02"))
+					}
+					lines = append(lines, line)
 				}
+			}
+			file.Close()
+			outputFile, _ := os.Create("config.ini")
+			defer outputFile.Close()
+			for _, line := range lines {
+				outputFile.WriteString(line + "\n")
 			}
 
 			enableBot, _ := config.Section("discordBot").Key("enableBot").Bool()
