@@ -1,12 +1,11 @@
 package crawler
 
 import (
-	// "fmt"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-
-	"github.com/anaskhan96/soup"
+	"os"
+	"strings"
 )
 
 const (
@@ -15,47 +14,44 @@ const (
 )
 
 type YunTechSSOCrawler struct {
-	Username string
-	Password string
-	Client   *http.Client
+	Client *http.Client
 }
 
 func (crawler *YunTechSSOCrawler) Login() bool {
-	if crawler.checkLogin() {
-		return true
-	}
-	token := crawler.getLoginToken()
-	payload := url.Values{}
-	payload.Add("__RequestVerificationToken", token)
-	payload.Add("pLoginName", crawler.Username)
-	payload.Add("pLoginPassword", crawler.Password)
-	payload.Add("pRememberMe", "true")
+	cookie, err := crawler.getExternalCookie()
 
-	resp, err := crawler.Client.PostForm(LOGIN_URL, payload)
+	if err != nil {
+		fmt.Println("[yunTechSSOCrawler] Please complete or create cookie.txt")
+		return false
+	}
+
+	return crawler.checkLogin(cookie)
+}
+
+
+func (crawler *YunTechSSOCrawler) checkLogin(cookie string) bool {
+
+	req, err := http.NewRequest("GET", CHECK_LOGIN_URL, nil)
+
 	if err != nil {
 		panic(err)
 	}
-	defer resp.Body.Close()
-	return crawler.checkLogin()
-}
 
-func (crawler *YunTechSSOCrawler) getLoginToken() string {
-	resp, err := crawler.Client.Get(LOGIN_URL)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
-	doc := soup.HTMLParse(string(body))
-	token := doc.Find("input", "name", "__RequestVerificationToken").Attrs()["value"]
-	return token
-}
+	req.Header.Add("Cookie", cookie)
 
-func (crawler *YunTechSSOCrawler) checkLogin() bool {
-	resp, err := crawler.Client.Get(CHECK_LOGIN_URL)
+	resp, err := crawler.Client.Do(req)
+
 	if err != nil {
 		panic(err)
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	return string(body) == "True"
+}
+
+func (crawler *YunTechSSOCrawler) getExternalCookie() (string, error) {
+	cookie, err := os.ReadFile("./cookie.txt")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(cookie)), err
 }

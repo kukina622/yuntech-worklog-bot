@@ -3,11 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"regexp"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +15,7 @@ import (
 	"yuntech-worklog-bot/crawler"
 	"yuntech-worklog-bot/util"
 
+	"github.com/fatih/color"
 	"github.com/robfig/cron/v3"
 	"gopkg.in/ini.v1"
 )
@@ -44,12 +45,9 @@ func main() {
 
 func task(jar *cookiejar.Jar, config *ini.File) {
 	var workList []string = config.Section("work").Key("work").ValueWithShadows()
-	userConfig := config.Section("user")
 
 	yunTechSSOCrawler := crawler.YunTechSSOCrawler{
-		Username: userConfig.Key("username").String(),
-		Password: userConfig.Key("password").String(),
-		Client:   &http.Client{Jar: jar},
+		Client: &http.Client{Jar: jar},
 	}
 
 	for i := 0; i < len(workList); i++ {
@@ -69,12 +67,14 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 			workType = "(Weekly)"
 		}
 
-		if time.Now().After(workDay) && workItem[len(workItem)-1]!=workDay.Format("2006/01/02") {
+		if time.Now().After(workDay) && workItem[len(workItem)-1] != workDay.Format("2006/01/02") {
 			fmt.Println("\n[crontab] Work detected at", workDay.Format("2006/01/02"), "with", workList[i], workType)
 			fmt.Println("[yunTechSSOCrawler] Try to login yuntech SSO...")
 			if loginResult := yunTechSSOCrawler.Login(); !loginResult {
+				color.Red("[yunTechSSOCrawler] Login Failed! Please Check Your Cookie!!!")
 				return
 			}
+
 			fmt.Println("[yunTechSSOCrawler] Login successfully")
 
 			startTimeText := workItem[2]
@@ -87,11 +87,13 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 				StartTime:         util.ApplyTimeByTimeText(workDay, startTimeText),
 				EndTime:           util.ApplyTimeByTimeText(workDay, endTimeText),
 			}
+
 			fmt.Println("[workLogCrawler] Fill out workLog...")
 			result := workLogCrawler.FillOutWorkLog()
 			if !result {
 				return
 			}
+
 			fmt.Println("[workLogCrawler] Fill out successfully")
 			file, _ := os.Open("config.ini")
 			var lines []string
