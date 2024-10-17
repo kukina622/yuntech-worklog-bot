@@ -71,7 +71,7 @@ func task(jar *cookiejar.Jar, config *ini.File) {
 			fmt.Println("\n[crontab] Work detected at", workDay.Format("2006/01/02"), "with", workList[i], workType)
 			fmt.Println("[yunTechSSOCrawler] Try to login yuntech SSO...")
 			if loginResult := yunTechSSOCrawler.Login(); !loginResult {
-				color.Red("[yunTechSSOCrawler] Login Failed! Please Check Your Cookie!!!")
+				color.New(color.FgRed).Println("[yunTechSSOCrawler] Login Failed! Please Check Your Cookie!!!")
 				return
 			}
 
