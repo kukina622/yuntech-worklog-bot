@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -20,6 +21,10 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+const (
+	DOMAIN = "https://webapp.yuntech.edu.tw"
+)
+
 func main() {
 	config, _ := ini.ShadowLoad("config.ini")
 	// discord
@@ -29,6 +34,9 @@ func main() {
 		botToken := discordConfig.Key("botToken").String()
 		bot.GetDiscordBotInstance().InitSession(botToken)
 	}
+
+	url, _ := url.Parse(DOMAIN)
+
 	// crontab
 	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "", log.LstdFlags))
 	jar, _ := cookiejar.New(nil)
@@ -36,6 +44,14 @@ func main() {
 	job.AddFunc(config.Section("program").Key("execFreq").String(), func() {
 		config, _ = ini.ShadowLoad("config.ini")
 		fmt.Println("\n[crontab] Task starting!!!")
+		cookie, err := util.GetExternalCookie()
+
+		if err != nil {
+			color.New(color.FgRed).Println("[crontab] Cookie file not found!!!")
+			return
+		}
+
+		jar.SetCookies(url, util.ParseCookieString(cookie))
 		task(jar, config)
 	})
 	fmt.Println("[crontab] Crontab running with", config.Section("program").Key("execFreq").String())
